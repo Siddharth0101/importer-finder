@@ -20,6 +20,8 @@ npm run dev            # React on http://localhost:5173, API on :3001
 
 Production: `npm run build && npm start` (Express serves the built React app on :3001).
 
+Netlify: `netlify.toml` builds the React app into `dist/` and runs every `/api` route as one function (`netlify/functions/api.mjs`, the same code as the local server, `server/api.js`). Set `GROQ_API_KEY`, `BOLD_API_KEY` and `APP_PASSWORD` under Project configuration → Environment variables, then redeploy. Online, the cache and saved searches live in Netlify Blobs, the routes that spend credits ask for `APP_PASSWORD` (the browser's login box, any user name), and the API keys button only shows which keys are set.
+
 ## .env
 
 | Key | What it does |
@@ -28,13 +30,14 @@ Production: `npm run build && npm start` (Express serves the built React app on 
 | `GROQ_AGENT_MODEL` | Model that runs the agent (default `openai/gpt-oss-120b`) |
 | `BOLD_API_KEY` | BillOfLadingData key (free account, 1,000 credits). Turns on importer prices and past deals from customs data |
 | `API_PORT` | Express port (default 3001) |
+| `APP_PASSWORD` | Password for searches and customs data. Optional locally; required on Netlify, so strangers with the link can't spend your credits |
 
 The two keys can also be pasted in the app with the **API keys** button. Both ways end up in this file: a pasted key is first checked with the provider (a free call, no credits or tokens) and then written to `.env`. Edits to the keys in `.env` apply without a restart (`server/keys.js`).
 
 ## How it works
 
 ```
-React (client/)  --SSE-->  Express /api/search (server/index.js)
+React (client/)  --SSE-->  /api/search (server/api.js: Express locally, a Netlify Function online)
                                |
                      LangChain createAgent + ChatGroq (server/agent.js)
                        understands the product, picks the HS code

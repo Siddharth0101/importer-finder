@@ -1,0 +1,13 @@
+# Netlify builds the React app into dist/ and runs the API as one function
+# (netlify/functions/api.mjs). Set GROQ_API_KEY, BOLD_API_KEY and APP_PASSWORD under
+# Project configuration → Environment variables.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[functions]
+  directory = "netlify/functions"

@@ -27,6 +27,7 @@ export function useAgentSearch() {
     source.current = es;
 
     const on = (type, fn) => es.addEventListener(type, (e) => {
+      if (!e.data) return; // the browser's own connection errors carry no data
       const data = JSON.parse(e.data);
       setState((s) => fn(s, data));
     });

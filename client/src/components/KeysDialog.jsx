@@ -12,7 +12,7 @@ async function postKey(name, value) {
   return body.keys;
 }
 
-function KeyField({ field, status, autoFocus, onSaved }) {
+function KeyField({ field, status, autoFocus, readOnly, onSaved }) {
   const [value, setValue] = useState('');
   const [state, setState] = useState(null); // { busy } | { error } | { saved }
   const id = `key-${field.name}`;
@@ -29,11 +29,14 @@ function KeyField({ field, status, autoFocus, onSaved }) {
     }
   };
 
+  const keyState = status && <span className={`key-state ${status.set ? 'ok' : ''}`}>{status.set ? `Set · ends in ${status.hint}` : 'Not set'}</span>;
+  if (readOnly) return <div className="key-field"><div className="key-head"><span className="key-name">{field.label}</span>{keyState}</div></div>;
+
   return (
     <form className="key-field" onSubmit={save}>
       <div className="key-head">
-        <label htmlFor={id}>{field.label}</label>
-        {status && <span className={`key-state ${status.set ? 'ok' : ''}`}>{status.set ? `Set · ends in ${status.hint}` : 'Not set'}</span>}
+        <label className="key-name" htmlFor={id}>{field.label}</label>
+        {keyState}
       </div>
       <div className="key-row">
         <input
@@ -61,6 +64,7 @@ function KeyField({ field, status, autoFocus, onSaved }) {
 export default function KeysDialog({ onClose, onSaved }) {
   const [keys, setKeys] = useState(null);
   const [error, setError] = useState(null);
+  const hosted = keys?.editable === false; // on Netlify the keys come from its settings
 
   useEffect(() => {
     fetch('/api/keys').then((r) => r.json()).then(setKeys).catch(() => setError("Can't reach the app's server."));
@@ -75,13 +79,19 @@ export default function KeysDialog({ onClose, onSaved }) {
     <div className="overlay" onClick={onClose}>
       <div className="dialog keys" role="dialog" aria-modal="true" aria-labelledby="keys-title" onClick={(e) => e.stopPropagation()}>
         <h3 id="keys-title">API keys</h3>
-        <p className="muted">
-          Paste a key here, or write it in <code>importer-finder/.env</code>. Both save to the same file and work without a restart.
-          Checking a key is free: no credits or tokens used.
-        </p>
+        {hosted ? (
+          <p className="muted">
+            On this hosted site the keys come from Netlify: <b>Project configuration → Environment variables</b> (<code>GROQ_API_KEY</code>, <code>BOLD_API_KEY</code>). Change them there, then redeploy.
+          </p>
+        ) : (
+          <p className="muted">
+            Paste a key here, or write it in <code>importer-finder/.env</code>. Both save to the same file and work without a restart.
+            Checking a key is free: no credits or tokens used.
+          </p>
+        )}
         {error && <p className="err">{error}</p>}
         {FIELDS.map((f, i) => (
-          <KeyField key={f.name} field={f} status={keys?.[f.name]} autoFocus={i === 0} onSaved={(k) => { setKeys(k); onSaved?.(); }} />
+          <KeyField key={f.name} field={f} status={keys?.[f.name]} autoFocus={i === 0} readOnly={hosted} onSaved={(k) => { setKeys(k); onSaved?.(); }} />
         ))}
         <div className="dialog-actions">
           <button type="button" className="btn" onClick={onClose}>Close</button>
