@@ -118,7 +118,7 @@ export async function runAgent({ product, country, hs, confirm = false }, emit, 
     const p = product.trim().toLowerCase();
     const hs = /^\d{2,6}$/.test(p) ? p : HS_HINTS[p] || HS_HINTS[p.replace(/s$/, '')];
     if (!hs) {
-      emit('error', { message: `Don't know the HS code for "${product}". Type an HS code (e.g. 1006), or add a Groq key (API keys button) so the agent can work it out.` });
+      emit('error', { message: `Don't know the HS code for "${product}". Type an HS code (e.g. 1006), or add GROQ_API_KEY so the agent can work it out.` });
       return;
     }
     await findImporters({ product, country, hs_code: hs }, steps, emit, { confirm });

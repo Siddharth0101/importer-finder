@@ -6,7 +6,6 @@ import Progress from './components/Progress.jsx';
 import MarketBar from './components/MarketBar.jsx';
 import ImporterTable from './components/ImporterTable.jsx';
 import ConfirmDialog from './components/ConfirmDialog.jsx';
-import KeysDialog from './components/KeysDialog.jsx';
 
 function useJson(url, retry) {
   const [value, setValue] = useState(null);
@@ -32,7 +31,6 @@ export default function App() {
   const [status, refreshStatus] = useJson('/api/status', true);
   const [recent, refreshRecent] = useJson('/api/recent', true);
   const [dialog, setDialog] = useState(null);
-  const [keysOpen, setKeysOpen] = useState(false);
   const [notice, setNotice] = useState(null);
 
   // Credits are checked by the server at most every 20 s.
@@ -63,7 +61,7 @@ export default function App() {
 
   return (
     <>
-      <Header status={status} onKeys={() => setKeysOpen(true)} />
+      <Header status={status} />
       <main>
         <SearchBar
           running={result.running}
@@ -86,7 +84,6 @@ export default function App() {
         )}
       </main>
       {dialog && <ConfirmDialog {...dialog} credits={status?.credits} />}
-      {keysOpen && <KeysDialog onClose={() => setKeysOpen(false)} onSaved={refreshStatus} />}
     </>
   );
 }

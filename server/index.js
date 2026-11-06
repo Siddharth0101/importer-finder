@@ -24,7 +24,7 @@ app.use('/api', async (req, res) => {
   const headers = Object.entries(req.headers).filter(([name, value]) => !HOP_BY_HOP.has(name) && typeof value === 'string');
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : Readable.toWeb(req);
   const request = new Request(new URL(req.originalUrl, `http://localhost:${PORT}`), { method: req.method, headers, body, duplex: 'half' });
-  const response = await handle(request, { ip: req.socket.remoteAddress });
+  const response = await handle(request);
   res.status(response.status);
   response.headers.forEach((value, name) => res.setHeader(name, value));
   if (!response.body) return res.end();

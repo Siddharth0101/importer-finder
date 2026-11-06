@@ -4,12 +4,10 @@
 
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { friendlyError, runAgent } from './agent.js';
-import { agentModel, checkGroqKey, hasGroqKey } from './groq.js';
-import { KEYS, cleanKey, keyStatus, saveKey } from './keys.js';
+import { agentModel, hasGroqKey } from './groq.js';
 import { storageCheck } from './storage.js';
 import { listCountries } from './tools/comtrade.js';
 import { listSearches } from './tools/history.js';
-import { boldCredits } from './tools/providers/bold.js';
 import { costs, creditsLeft, importersWithPrices, moreShipments, providerLabel, shipmentsConnected } from './tools/shipments.js';
 
 const json = (body, status = 200, headers = {}) => Response.json(body, { status, headers });
@@ -59,34 +57,6 @@ const denied = (reason) => (reason === 'password'
   ? json({ error: LOCKED.password }, 401, { 'WWW-Authenticate': 'Basic realm="Importer Finder", charset="UTF-8"' })
   : json({ error: LOCKED.setup }, 503));
 
-// API keys box. Keys change only from this computer and this app's own page, so another
-// website can't change them; a pasted key is checked with a free call before it is saved.
-const LOCAL = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
-const fromThisApp = (request, ip) => LOCAL.has(ip)
-  && (!request.headers.get('origin') || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(request.headers.get('origin')));
-const CHECKS = { groq: checkGroqKey, bold: boldCredits };
-
-async function saveKeyRoute({ request, ip, hosted }) {
-  if (hosted) return json({ error: 'On the hosted site the keys come from Netlify → Environment variables. Change them there and redeploy.' }, 403);
-  if (!fromThisApp(request, ip)) return json({ error: 'Keys can only be changed from this computer.' }, 403);
-  if (!(request.headers.get('content-type') || '').includes('application/json')) return json({ error: 'Unknown key.' }, 400);
-  const text = await request.text();
-  if (text.length > 4096) return json({ error: 'Too long.' }, 413);
-  let name;
-  let value;
-  try { ({ name, value } = JSON.parse(text)); } catch {}
-  if (!Object.hasOwn(KEYS, name)) return json({ error: 'Unknown key.' }, 400);
-  try {
-    const key = cleanKey(name, value);
-    await CHECKS[name](key);
-    saveKey(name, key);
-    return json({ ok: true, keys: keyStatus() });
-  } catch (err) {
-    const unreachable = err.name === 'TimeoutError' || err.message === 'fetch failed'; // network down or slow
-    return json({ error: unreachable ? `Couldn't reach ${KEYS[name].label} to check the key. Try again.` : err.message }, 400);
-  }
-}
-
 const PUBLIC = {
   'GET /api/status': async () => json({
     groq: hasGroqKey(),
@@ -97,9 +67,6 @@ const PUBLIC = {
     storage: await storageCheck(),
   }),
   'GET /api/countries': async () => json(await listCountries()),
-  // Which keys are set (last 4 characters only). Read-only on the hosted site.
-  'GET /api/keys': ({ hosted }) => json({ ...keyStatus(), editable: !hosted }),
-  'POST /api/keys': saveKeyRoute,
 };
 
 const PRIVATE = {
@@ -128,7 +95,7 @@ const PRIVATE = {
   },
 };
 
-export async function handle(request, { ip = '', hosted = false } = {}) {
+export async function handle(request, { hosted = false } = {}) {
   const url = new URL(request.url);
   const route = `${request.method} ${url.pathname.replace(/\/+$/, '')}`;
   const q = (k) => String(url.searchParams.get(k) || '').trim();
@@ -140,7 +107,7 @@ export async function handle(request, { ip = '', hosted = false } = {}) {
     if (reason) return route === 'GET /api/search' ? sse((emit) => emit('error', { message: LOCKED[reason] })) : denied(reason);
   }
   try {
-    return await run({ request, url, q, ip, hosted });
+    return await run({ q });
   } catch (err) {
     console.error(err);
     return json({ error: friendlyError(err) }, 502);

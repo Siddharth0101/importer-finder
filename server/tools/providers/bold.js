@@ -17,10 +17,10 @@ export const hasBoldKey = () => Boolean(getKey('bold'));
 export const importersPerPage = () => Number(process.env.BOLD_IMPORTERS_PER_PAGE) || 5;
 export const shipmentsPerImporter = () => Number(process.env.BOLD_SHIPMENTS_PER_IMPORTER) || 5;
 
-async function call(path, body, apiKey = getKey('bold')) {
+async function call(path, body) {
   const res = await fetch(`${BASE}/${path}`, {
     method: 'POST',
-    headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api-key': getKey('bold'), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(60_000),
   });
@@ -39,9 +39,8 @@ async function cached(name, key, fn) {
   return value;
 }
 
-// Free call. Without `apiKey` it uses the saved key; with one, it checks a pasted key.
-export async function boldCredits(apiKey) {
-  const data = await call('credit-usage', {}, apiKey);
+export async function boldCredits() {
+  const data = await call('credit-usage', {});
   return data.credits?.data_credits || null; // { total, used, remaining }
 }
 

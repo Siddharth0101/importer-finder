@@ -5,6 +5,6 @@ import { useBlobs } from '../../server/storage.js';
 
 useBlobs(); // no lasting disk here: the cache and saved searches go to Netlify Blobs
 
-export default (request, context) => handle(request, { ip: context.ip, hosted: true });
+export default (request) => handle(request, { hosted: true });
 
 export const config = { path: '/api/*' };

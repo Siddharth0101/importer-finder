@@ -39,7 +39,7 @@ async function costOfPage(iso2, hsCodes, page) {
 // { needsConfirm, cost } and asks the user first. Cached pages are always free.
 export async function importersWithPrices({ country, hs_code, page = 1, confirm = false }) {
   if (!hasBoldKey()) {
-    return { connected: false, note: 'Customs data not connected. Add the BillOfLadingData key with the API keys button, or BOLD_API_KEY in .env.' };
+    return { connected: false, note: 'Customs data not connected. Add BOLD_API_KEY in .env, or in Netlify\'s environment variables.' };
   }
   const { iso2, hsCodes } = await lookup(country, hs_code);
   const cost = confirm ? 0 : await costOfPage(iso2, hsCodes, page);
